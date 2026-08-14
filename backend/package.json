@@ -9,7 +9,8 @@
     "seed": "node src/seed.js",
     "test-firebase": "node src/test-firebase.js",
     "test-location": "node src/test-location.js",
-    "test": "node src/test-firebase.js && node src/test-location.js"
+    "test-transit": "node src/test-transit-read.js",
+    "test": "node src/test-firebase.js && node src/test-location.js && node src/test-transit-read.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

@@ -3,6 +3,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const { initializeFirebase } = require('./config/firebase');
 const locationRoutes = require('./routes/locationRoutes');
+const transitRoutes = require('./routes/transitRoutes');
 
 dotenv.config();
 
@@ -18,6 +19,7 @@ app.use(express.json());
 
 // Routes
 app.use('/api', locationRoutes);
+app.use('/api', transitRoutes);
 
 // Health Check Endpoint
 app.get('/health', (req, res) => {
