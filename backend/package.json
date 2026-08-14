@@ -6,7 +6,10 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "seed": "node src/seed.js"
+    "seed": "node src/seed.js",
+    "test-firebase": "node src/test-firebase.js",
+    "test-location": "node src/test-location.js",
+    "test": "node src/test-firebase.js && node src/test-location.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const { initializeFirebase } = require('./config/firebase');
+const locationRoutes = require('./routes/locationRoutes');
 
 dotenv.config();
 
@@ -14,6 +15,9 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Routes
+app.use('/api', locationRoutes);
 
 // Health Check Endpoint
 app.get('/health', (req, res) => {
