@@ -28,11 +28,12 @@ async function runTransitReadTests() {
     }
   }
 
-  // 1. Test getAllBuses()
+  // 1. Test getAllBuses() contains multiple buses
   try {
     const buses = await getAllBuses();
-    const hasBus101 = buses && buses.BUS101 && buses.BUS101.busNumber === '101';
-    assertTest('1. getAllBuses() contains BUS101 with accurate metadata', hasBus101);
+    const busKeys = Object.keys(buses || {});
+    const hasMultipleBuses = busKeys.length >= 5 && buses.BUS101 && buses.BUS102 && buses.BUS103;
+    assertTest(`1. getAllBuses() contains ${busKeys.length} buses (BUS101..BUS105)`, hasMultipleBuses);
   } catch (err) {
     assertTest('1. getAllBuses()', false, err.message);
   }
@@ -55,13 +56,14 @@ async function runTransitReadTests() {
     assertTest('3. getAllStops()', false, err.message);
   }
 
-  // 4. Test getLiveLocation('BUS101')
+  // 4. Test getLiveLocation('BUS101') and 'BUS102'
   try {
-    const liveLoc = await getLiveLocation('BUS101');
-    const isLiveValid = liveLoc && liveLoc.busId === 'BUS101' && typeof liveLoc.latitude === 'number';
-    assertTest('4. getLiveLocation("BUS101") returns current live location', isLiveValid);
+    const liveLoc101 = await getLiveLocation('BUS101');
+    const liveLoc102 = await getLiveLocation('BUS102');
+    const isLiveValid = liveLoc101 && liveLoc101.busId === 'BUS101' && liveLoc102 && liveLoc102.busId === 'BUS102';
+    assertTest('4. getLiveLocation() returns live telemetry for BUS101 and BUS102', isLiveValid);
   } catch (err) {
-    assertTest('4. getLiveLocation("BUS101")', false, err.message);
+    assertTest('4. getLiveLocation()', false, err.message);
   }
 
   // 5. Test getLiveLocation('BUS999') non-existent

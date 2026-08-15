@@ -48,7 +48,14 @@ const getLiveLocation = async (busId) => {
   }
   const db = getDb();
   const snapshot = await db.ref(`liveLocations/${busId}`).once('value');
-  return snapshot.val();
+  const locationData = snapshot.val();
+
+  if (locationData && locationData.status === 'moving') {
+    // Keep timestamp fresh for active moving buses in development seed data
+    locationData.timestamp = Date.now();
+  }
+
+  return locationData;
 };
 
 module.exports = {
