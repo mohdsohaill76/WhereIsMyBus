@@ -14,15 +14,6 @@ class RouteDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Map stops to map structure
-    final stopsData = route.stops
-        .map((s) => {
-              'id': s.id,
-              'name': s.name,
-              'shortName': s.shortName,
-            })
-        .toList();
-
     final firstStop = route.stops.isNotEmpty ? route.stops.first.shortName : 'Start';
     final secondStop = route.stops.length > 1 ? route.stops[1].shortName : 'Next';
 
@@ -66,7 +57,7 @@ class RouteDetailsScreen extends StatelessWidget {
           children: [
             // 1. Route Map Overview Visualization
             SizedBox(
-              height: 220,
+              height: 240,
               width: double.infinity,
               child: BusMapWidget(
                 latitude: route.stops.isNotEmpty ? route.stops.first.latitude : 17.9784,
@@ -74,7 +65,8 @@ class RouteDetailsScreen extends StatelessWidget {
                 busNumber: route.assignedBusIds.isNotEmpty ? route.assignedBusIds.first : 'BUS101',
                 currentStop: firstStop,
                 nextStop: secondStop,
-                stops: stopsData,
+                stops: route.stops,
+                isOverviewMode: true,
               ),
             ),
             const SizedBox(height: 20),

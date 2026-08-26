@@ -71,5 +71,41 @@ void main() {
       expect(location.currentStop, equals('STOP001'));
       expect(location.nextStop, equals('STOP002'));
     });
+
+    test('5. LiveLocation stale detection (> 30s threshold)', () {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final recentLocation = LiveLocation.fromJson({
+        "latitude": 17.9784,
+        "longitude": 79.5941,
+        "speed": 30,
+        "timestamp": now - 5000, // 5s ago
+        "status": "moving"
+      });
+      final staleLocation = LiveLocation.fromJson({
+        "latitude": 17.9784,
+        "longitude": 79.5941,
+        "speed": 0,
+        "timestamp": now - 35000, // 35s ago
+        "status": "offline"
+      });
+
+      expect(recentLocation.isStale, isFalse);
+      expect(staleLocation.isStale, isTrue);
+    });
+
+    test('6. RouteModel assigned bus IDs parsing', () {
+      final routeJson = {
+        "KZP03": {
+          "name": "Kazipet → NIT Connector",
+          "stopIds": ["STOP003", "STOP004", "STOP005"],
+          "assignedBusIds": ["BUS104"]
+        }
+      };
+
+      final route = RouteModel.fromJson("KZP03", routeJson["KZP03"]!);
+      expect(route.id, equals('KZP03'));
+      expect(route.assignedBusIds, contains('BUS104'));
+      expect(route.stopCount, equals(3));
+    });
   });
 }

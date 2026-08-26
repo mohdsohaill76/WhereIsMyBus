@@ -198,6 +198,35 @@ class TransitApiService {
     return null;
   }
 
+  /// Fetches the RouteModel assigned to a specific bus.
+  Future<RouteModel?> getRouteForBus(String busId) async {
+    try {
+      final routes = await fetchRoutes();
+      final cleanId = busId.replaceAll(' ', '').toUpperCase();
+      for (final route in routes) {
+        if (route.assignedBusIds.any((b) => b.toUpperCase() == cleanId)) {
+          return route;
+        }
+      }
+      if (routes.isNotEmpty) return routes.first;
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Returns the ordered stops for a specific bus route.
+  Future<List<StopModel>> getStopsForBus(String busId) async {
+    final route = await getRouteForBus(busId);
+    if (route != null && route.stops.isNotEmpty) {
+      return route.stops;
+    }
+    if (_cachedStops != null && _cachedStops!.isNotEmpty) {
+      return _cachedStops!;
+    }
+    return await fetchStops().catchError((_) => <StopModel>[]);
+  }
+
   /// Helper to convert route stop models to map structure
   List<Map<String, String>> getRouteStops([String? busId]) {
     if (_cachedStops != null && _cachedStops!.isNotEmpty) {

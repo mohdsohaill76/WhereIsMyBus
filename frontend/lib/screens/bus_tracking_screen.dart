@@ -25,6 +25,7 @@ class BusTrackingScreen extends StatefulWidget {
 class _BusTrackingScreenState extends State<BusTrackingScreen> {
   final TransitApiService _apiService = TransitApiService();
   LiveLocation? _location;
+  List<StopModel> _routeStops = [];
   StopModel? _nextStopModel;
   bool _isLoading = true;
   String? _errorMessage;
@@ -55,16 +56,28 @@ class _BusTrackingScreenState extends State<BusTrackingScreen> {
     }
 
     try {
-      await _apiService.fetchStops().catchError((_) => <StopModel>[]);
+      final stops = await _apiService.getStopsForBus(widget.busNumber);
       final loc = await _apiService.getLiveLocation(widget.busNumber);
+
       if (mounted) {
         StopModel? resolvedNextStop;
         if (loc != null && loc.nextStop.isNotEmpty) {
-          resolvedNextStop = await _apiService.resolveStop(loc.nextStop);
+          final nextQuery = loc.nextStop.trim().toLowerCase();
+          for (final s in stops) {
+            if (s.id.toLowerCase() == nextQuery ||
+                s.shortName.toLowerCase() == nextQuery ||
+                s.name.toLowerCase() == nextQuery ||
+                s.name.toLowerCase().contains(nextQuery)) {
+              resolvedNextStop = s;
+              break;
+            }
+          }
+          resolvedNextStop ??= await _apiService.resolveStop(loc.nextStop);
         }
 
         setState(() {
           _location = loc;
+          _routeStops = stops;
           _nextStopModel = resolvedNextStop;
           _isLoading = false;
           _errorMessage = loc == null ? 'Bus location not found' : null;
@@ -82,7 +95,10 @@ class _BusTrackingScreenState extends State<BusTrackingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final stops = _apiService.getRouteStops(widget.busNumber);
+    final screenHeight = MediaQuery.of(context).size.height;
+    final bottomSheetHeight = (screenHeight * 0.44).clamp(320.0, 420.0);
+    final mapBottomPadding = bottomSheetHeight - 30.0;
+
     final isStale = _location?.isStale ?? false;
     final isLive = !isStale && (_location?.status.toLowerCase() == 'moving');
 
@@ -95,9 +111,9 @@ class _BusTrackingScreenState extends State<BusTrackingScreen> {
       body: SafeArea(
         child: Stack(
           children: [
-            // 1. Dominant Map Layer
+            // 1. Dominant Google Map Layer
             Positioned.fill(
-              bottom: 300,
+              bottom: mapBottomPadding,
               child: _isLoading
                   ? const Center(
                       child: CircularProgressIndicator(color: AppTheme.primaryBlue),
@@ -142,7 +158,11 @@ class _BusTrackingScreenState extends State<BusTrackingScreen> {
                           busNumber: displayBusName,
                           currentStop: _location!.currentStop,
                           nextStop: _location!.nextStop,
-                          stops: stops,
+                          stops: _routeStops,
+                          isLive: isLive,
+                          isStale: isStale,
+                          speed: _location!.speed,
+                          status: _location!.status,
                         ),
             ),
 
@@ -184,7 +204,7 @@ class _BusTrackingScreenState extends State<BusTrackingScreen> {
                     ),
                   ),
 
-                  // Bus ID & Live Pill Badge
+                  // Bus ID & Live / Offline Pill Badge
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
@@ -216,7 +236,7 @@ class _BusTrackingScreenState extends State<BusTrackingScreen> {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          isLive ? 'LIVE' : 'OFFLINE',
+                          isLive ? 'LIVE' : (isStale ? 'STALE' : _location?.status.toUpperCase() ?? 'OFFLINE'),
                           style: TextStyle(
                             color: isLive ? const Color(0xFF4ADE80) : Colors.amber,
                             fontSize: 11,
@@ -235,7 +255,7 @@ class _BusTrackingScreenState extends State<BusTrackingScreen> {
               left: 0,
               right: 0,
               bottom: 0,
-              height: 380,
+              height: bottomSheetHeight,
               child: Container(
                 decoration: AppTheme.sheetDecoration(),
                 child: SingleChildScrollView(
@@ -270,7 +290,8 @@ class _BusTrackingScreenState extends State<BusTrackingScreen> {
                         RouteProgressCard(
                           currentStop: _location!.currentStop,
                           nextStop: _location!.nextStop,
-                          stops: stops,
+                          stops: _routeStops,
+                          routeName: widget.routeName,
                         ),
                         const SizedBox(height: 16),
 

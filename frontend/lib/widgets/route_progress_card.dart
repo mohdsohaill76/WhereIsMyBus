@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
+import '../models/stop_model.dart';
 import '../theme/app_theme.dart';
 
 class RouteProgressCard extends StatelessWidget {
   final String currentStop;
   final String nextStop;
-  final List<Map<String, String>> stops;
+  final List<dynamic> stops;
+  final String? routeName;
 
   const RouteProgressCard({
     super.key,
     required this.currentStop,
     required this.nextStop,
     required this.stops,
+    this.routeName,
   });
 
   @override
@@ -22,10 +25,10 @@ class RouteProgressCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Section Header
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              const Text(
                 'Route Progress',
                 style: TextStyle(
                   fontSize: 15,
@@ -35,8 +38,8 @@ class RouteProgressCard extends StatelessWidget {
                 ),
               ),
               Text(
-                'Route WGL01',
-                style: TextStyle(
+                routeName ?? 'Route Progress',
+                style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                   color: AppTheme.primaryBlue,
@@ -159,11 +162,16 @@ class RouteProgressCard extends StatelessWidget {
             physics: const NeverScrollableScrollPhysics(),
             itemCount: stops.length,
             itemBuilder: (context, index) {
-              final stop = stops[index];
-              final stopName = stop['name']!;
-              final shortName = stop['shortName'] ?? stopName;
-              final isCurrent = shortName.toLowerCase() == currentStop.toLowerCase();
-              final isNext = shortName.toLowerCase() == nextStop.toLowerCase();
+              final item = stops[index];
+              final String stopName = item is StopModel ? item.name : (item['name']?.toString() ?? 'Stop');
+              final String shortName = item is StopModel ? item.shortName : (item['shortName']?.toString() ?? stopName);
+              final String stopId = item is StopModel ? item.id : (item['id']?.toString() ?? 'STOP');
+              final isCurrent = shortName.toLowerCase() == currentStop.toLowerCase() ||
+                  stopId.toLowerCase() == currentStop.toLowerCase() ||
+                  stopName.toLowerCase() == currentStop.toLowerCase();
+              final isNext = shortName.toLowerCase() == nextStop.toLowerCase() ||
+                  stopId.toLowerCase() == nextStop.toLowerCase() ||
+                  stopName.toLowerCase() == nextStop.toLowerCase();
               final isOrigin = index == 0;
               final isDestination = index == stops.length - 1;
 
@@ -245,7 +253,7 @@ class RouteProgressCard extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 1),
                                   Text(
-                                    stop['id']!,
+                                    stopId,
                                     style: const TextStyle(
                                       fontSize: 10,
                                       color: AppTheme.textMuted,
