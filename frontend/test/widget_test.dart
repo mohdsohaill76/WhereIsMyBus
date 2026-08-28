@@ -7,34 +7,36 @@ import 'package:frontend/screens/routes_screen.dart';
 void main() {
   testWidgets('Passenger App Home Screen smoke test', (WidgetTester tester) async {
     await tester.pumpWidget(const WhereIsMyBusApp());
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 500));
 
     // Verify header and branding
     expect(find.text('WhereIsMyBus'), findsOneWidget);
-    expect(find.text('Your city, moving with you'), findsOneWidget);
+    expect(find.text('Real-time public transport'), findsOneWidget);
 
-    // Verify search placeholder
-    expect(find.text('Search bus number or route...'), findsOneWidget);
+    // Verify hero copy and search placeholder
+    expect(find.text('Track your bus.\nKnow when it arrives.'), findsOneWidget);
+    expect(find.text('Search buses, routes or stops...'), findsOneWidget);
 
-    // Verify Available Buses header
-    expect(find.text('Live Buses Near You'), findsOneWidget);
+    // Verify Live Buses header / stats
+    expect(find.text('Live buses'), findsWidgets);
+    expect(find.text('Currently operating'), findsOneWidget);
   });
 
   testWidgets('Navigation from Home Screen to Bus Tracking Screen test', (WidgetTester tester) async {
     await tester.pumpWidget(const WhereIsMyBusApp());
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 500));
 
-    if (find.text('Track Bus').hasFound) {
-      // Tap first Track Bus button
-      await tester.tap(find.text('Track Bus').first);
-      await tester.pumpAndSettle();
+    if (find.text('Track').hasFound) {
+      // Tap first Track button
+      await tester.tap(find.text('Track').first);
+      await tester.pump(const Duration(milliseconds: 500));
 
       // Verify BusTrackingScreen rendered
       expect(find.byType(BusTrackingScreen), findsOneWidget);
 
       // Tap back button
       await tester.tap(find.byIcon(Icons.arrow_back_rounded).first);
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 500));
 
       // Verify returned to Home Screen
       expect(find.text('WhereIsMyBus'), findsOneWidget);
@@ -43,15 +45,15 @@ void main() {
 
   testWidgets('Routes Screen rendering and Route Details test', (WidgetTester tester) async {
     await tester.pumpWidget(const WhereIsMyBusApp());
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 500));
 
     // Switch to Routes tab in floating navigation
     await tester.tap(find.byIcon(Icons.alt_route_rounded).last);
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 500));
 
     // Routes Screen renders
     expect(find.byType(RoutesScreen), findsOneWidget);
-    expect(find.text('Bus Routes'), findsOneWidget);
-    expect(find.text('Explore transit lines and stops'), findsOneWidget);
+    expect(find.text('Routes'), findsWidgets);
+    expect(find.text('Find your route and see buses operating right now.'), findsOneWidget);
   });
 }

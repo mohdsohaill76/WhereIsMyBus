@@ -17,8 +17,12 @@ class TransitApiException implements Exception {
 }
 
 class TransitApiService {
-  // Centralized API Base URL for backend connection
-  static String baseUrl = 'http://localhost:3000';
+  /// Centralized API Base URL for backend connection.
+  /// Overridable at compile time via: --dart-define=API_BASE_URL=https://your-backend-domain.com
+  static String baseUrl = const String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://localhost:3000',
+  );
 
   /// Standard HTTP timeout duration (10s prevents false connection timeouts on browser cold-start)
   static const Duration _requestTimeout = Duration(seconds: 10);

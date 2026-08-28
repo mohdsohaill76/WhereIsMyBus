@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../models/stop_model.dart';
 import '../theme/app_theme.dart';
+import 'live_status_dot.dart';
 
+/// Premium Transit Progress Timeline
 class RouteProgressCard extends StatelessWidget {
   final String currentStop;
   final String nextStop;
@@ -19,12 +21,15 @@ class RouteProgressCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: AppTheme.cardDecoration(),
+      padding: const EdgeInsets.all(18),
+      decoration: AppTheme.cardDecoration(
+        background: AppTheme.surfaceLayer2,
+        border: AppTheme.borderMedium,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Section Header
+          // Section Header: Title & Route Name
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -33,40 +38,52 @@ class RouteProgressCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w800,
-                  color: AppTheme.textDark,
+                  color: AppTheme.textPrimary,
                   letterSpacing: -0.2,
                 ),
               ),
-              Text(
-                routeName ?? 'Route Progress',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.primaryBlue,
+              if (routeName != null)
+                Flexible(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: AppTheme.surfaceLayer1,
+                      borderRadius: BorderRadius.circular(AppTheme.radiusPill),
+                      border: Border.all(color: AppTheme.borderSubtle),
+                    ),
+                    child: Text(
+                      routeName!,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.primaryBlueLight,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                 ),
-              ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
 
-          // Current Stop / Next Stop Highlight Cards
+          // Current & Next Stop Callout Boxes
           Row(
             children: [
-              // CURRENT STOP (Green Theme)
+              // CURRENT STOP
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFDCFCE7),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFF86EFAC)),
+                    color: AppTheme.statusLiveBg,
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                    border: Border.all(color: AppTheme.statusLiveBorder),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Row(
                         children: [
-                          Icon(Icons.location_on_rounded, size: 13, color: Color(0xFF16A34A)),
+                          LiveStatusDot(size: 4, color: AppTheme.statusLive),
                           SizedBox(width: 4),
                           Expanded(
                             child: Text(
@@ -74,8 +91,8 @@ class RouteProgressCard extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 9,
                                 fontWeight: FontWeight.w800,
-                                color: Color(0xFF166534),
-                                letterSpacing: 0.4,
+                                color: AppTheme.statusLive,
+                                letterSpacing: 0.5,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -84,11 +101,11 @@ class RouteProgressCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        currentStop,
+                        currentStop.isNotEmpty ? currentStop : 'In transit',
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
-                          color: Color(0xFF14532D),
+                          color: AppTheme.textPrimary,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -96,23 +113,23 @@ class RouteProgressCard extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
 
-              // NEXT STOP (Blue Theme)
+              // NEXT STOP
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEFF6FF),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFF93C5FD)),
+                    color: AppTheme.surfaceLayer1,
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                    border: Border.all(color: AppTheme.borderAccent),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Row(
                         children: [
-                          Icon(Icons.near_me_rounded, size: 13, color: AppTheme.primaryBlue),
+                          Icon(Icons.near_me_rounded, size: 11, color: AppTheme.primaryBlueLight),
                           SizedBox(width: 4),
                           Expanded(
                             child: Text(
@@ -120,8 +137,8 @@ class RouteProgressCard extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 9,
                                 fontWeight: FontWeight.w800,
-                                color: Color(0xFF1E40AF),
-                                letterSpacing: 0.4,
+                                color: AppTheme.primaryBlueLight,
+                                letterSpacing: 0.5,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -130,11 +147,11 @@ class RouteProgressCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        nextStop,
+                        nextStop.isNotEmpty ? nextStop : 'Approaching',
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
-                          color: Color(0xFF1E3A8A),
+                          color: AppTheme.textPrimary,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -144,19 +161,20 @@ class RouteProgressCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
 
           const Text(
-            'Ordered Stops Timeline',
+            'Timeline Stops',
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: AppTheme.textMuted,
+              color: AppTheme.textTertiary,
+              letterSpacing: 0.3,
             ),
           ),
           const SizedBox(height: 12),
 
-          // Timeline Stop List
+          // Custom Bespoke Vertical Timeline
           ListView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -166,6 +184,7 @@ class RouteProgressCard extends StatelessWidget {
               final String stopName = item is StopModel ? item.name : (item['name']?.toString() ?? 'Stop');
               final String shortName = item is StopModel ? item.shortName : (item['shortName']?.toString() ?? stopName);
               final String stopId = item is StopModel ? item.id : (item['id']?.toString() ?? 'STOP');
+
               final isCurrent = shortName.toLowerCase() == currentStop.toLowerCase() ||
                   stopId.toLowerCase() == currentStop.toLowerCase() ||
                   stopName.toLowerCase() == currentStop.toLowerCase();
@@ -175,23 +194,24 @@ class RouteProgressCard extends StatelessWidget {
               final isOrigin = index == 0;
               final isDestination = index == stops.length - 1;
 
-              Color dotColor;
+              Color nodeColor;
               Color lineColor;
+
               if (isCurrent) {
-                dotColor = const Color(0xFF16A34A);
+                nodeColor = AppTheme.statusLive;
                 lineColor = AppTheme.primaryBlue;
               } else if (isNext) {
-                dotColor = AppTheme.primaryBlue;
-                lineColor = const Color(0xFFCBD5E1);
+                nodeColor = AppTheme.primaryBlueLight;
+                lineColor = AppTheme.borderSubtle;
               } else if (isOrigin) {
-                dotColor = const Color(0xFF0F172A);
-                lineColor = AppTheme.primaryBlue;
+                nodeColor = AppTheme.primaryBlue;
+                lineColor = AppTheme.borderSubtle;
               } else if (isDestination) {
-                dotColor = const Color(0xFFDC2626);
-                lineColor = const Color(0xFFCBD5E1);
+                nodeColor = AppTheme.accentPurple;
+                lineColor = AppTheme.borderSubtle;
               } else {
-                dotColor = const Color(0xFF94A3B8);
-                lineColor = const Color(0xFFCBD5E1);
+                nodeColor = AppTheme.borderLight;
+                lineColor = AppTheme.borderSubtle;
               }
 
               return IntrinsicHeight(
@@ -200,32 +220,37 @@ class RouteProgressCard extends StatelessWidget {
                   children: [
                     // Timeline Line & Node Dot
                     SizedBox(
-                      width: 20,
+                      width: 22,
                       child: Column(
                         children: [
-                          Container(
-                            width: (isCurrent || isNext) ? 12 : 9,
-                            height: (isCurrent || isNext) ? 12 : 9,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: dotColor,
-                              border: Border.all(
-                                color: (isCurrent || isNext) ? Colors.white : Colors.transparent,
-                                width: 2,
+                          if (isCurrent)
+                            const LiveStatusDot(size: 8, color: AppTheme.statusLive)
+                          else
+                            Container(
+                              width: (isNext || isOrigin || isDestination) ? 10 : 8,
+                              height: (isNext || isOrigin || isDestination) ? 10 : 8,
+                              margin: const EdgeInsets.symmetric(vertical: 2),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: nodeColor,
+                                border: Border.all(
+                                  color: isNext ? AppTheme.primaryBlueGlow : Colors.transparent,
+                                  width: 2,
+                                ),
                               ),
                             ),
-                          ),
                           if (!isDestination)
                             Expanded(
                               child: Container(
                                 width: 2,
                                 color: lineColor,
+                                margin: const EdgeInsets.symmetric(vertical: 2),
                               ),
                             ),
                         ],
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 10),
 
                     // Stop Detail Text & Badges
                     Expanded(
@@ -243,20 +268,20 @@ class RouteProgressCard extends StatelessWidget {
                                     style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: isCurrent || isNext || isOrigin || isDestination
-                                          ? FontWeight.w800
-                                          : FontWeight.w600,
+                                          ? FontWeight.w700
+                                          : FontWeight.w500,
                                       color: isCurrent
-                                          ? const Color(0xFF15803D)
-                                          : (isNext ? AppTheme.primaryBlue : AppTheme.textDark),
+                                          ? AppTheme.statusLive
+                                          : (isNext ? AppTheme.primaryBlueLight : AppTheme.textPrimary),
                                     ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   const SizedBox(height: 1),
                                   Text(
-                                    stopId,
+                                    'Stop #${index + 1} • $stopId',
                                     style: const TextStyle(
                                       fontSize: 10,
-                                      color: AppTheme.textMuted,
+                                      color: AppTheme.textTertiary,
                                     ),
                                   ),
                                 ],
@@ -264,33 +289,35 @@ class RouteProgressCard extends StatelessWidget {
                             ),
                             if (isCurrent)
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFDCFCE7),
-                                  borderRadius: BorderRadius.circular(6),
+                                  color: AppTheme.statusLiveBg,
+                                  borderRadius: BorderRadius.circular(AppTheme.radiusPill),
+                                  border: Border.all(color: AppTheme.statusLiveBorder),
                                 ),
                                 child: const Text(
-                                  'At Stop',
+                                  'Current',
                                   style: TextStyle(
                                     fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF15803D),
+                                    fontWeight: FontWeight.w700,
+                                    color: AppTheme.statusLive,
                                   ),
                                 ),
                               )
                             else if (isNext)
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFEFF6FF),
-                                  borderRadius: BorderRadius.circular(6),
+                                  color: AppTheme.surfaceLayer3,
+                                  borderRadius: BorderRadius.circular(AppTheme.radiusPill),
+                                  border: Border.all(color: AppTheme.borderAccent),
                                 ),
                                 child: const Text(
-                                  'Next Stop',
+                                  'Next',
                                   style: TextStyle(
                                     fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppTheme.primaryBlue,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppTheme.primaryBlueLight,
                                   ),
                                 ),
                               )
@@ -299,8 +326,8 @@ class RouteProgressCard extends StatelessWidget {
                                 'Origin',
                                 style: TextStyle(
                                   fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppTheme.textDark,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppTheme.textTertiary,
                                 ),
                               )
                             else if (isDestination)
@@ -308,8 +335,8 @@ class RouteProgressCard extends StatelessWidget {
                                 'Destination',
                                 style: TextStyle(
                                   fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFFDC2626),
+                                  fontWeight: FontWeight.w600,
+                                  color: AppTheme.accentPurple,
                                 ),
                               ),
                           ],

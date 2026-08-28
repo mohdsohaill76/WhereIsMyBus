@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import 'live_status_dot.dart';
 
+/// Premium Dashboard Metrics Widget with Hero Numbers
 class QuickStatsBar extends StatelessWidget {
   final int totalBuses;
   final int liveBuses;
@@ -13,57 +15,86 @@ class QuickStatsBar extends StatelessWidget {
     required this.activeRoutes,
   });
 
-  Widget _buildStatTile({
-    required IconData icon,
+  Widget _buildMetricCard({
     required String value,
     required String label,
-    required Color iconColor,
-    required Color bgTint,
-    required bool compact,
+    required IconData icon,
+    required Color accentColor,
+    bool isLive = false,
   }) {
     return Expanded(
       child: Container(
-        padding: EdgeInsets.symmetric(vertical: 10, horizontal: compact ? 6 : 10),
-        decoration: AppTheme.cardDecoration(radius: 12),
-        child: Row(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceLayer1,
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+          border: Border.all(color: AppTheme.borderSubtle, width: 1),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x1F000000),
+              blurRadius: 10,
+              offset: Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              padding: EdgeInsets.all(compact ? 6 : 8),
-              decoration: BoxDecoration(
-                color: bgTint,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(icon, size: compact ? 16 : 18, color: iconColor),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                if (isLive)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      LiveStatusDot(size: 6, color: accentColor),
+                      const SizedBox(width: 4),
+                      Text(
+                        'LIVE',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: accentColor,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  )
+                else
+                  Icon(icon, size: 14, color: AppTheme.textTertiary),
+                Container(
+                  width: 4,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isLive ? accentColor : AppTheme.borderLight,
+                  ),
+                ),
+              ],
             ),
-            SizedBox(width: compact ? 6 : 8),
-            Flexible(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    value,
-                    style: TextStyle(
-                      fontSize: compact ? 14 : 16,
-                      fontWeight: FontWeight.w800,
-                      color: AppTheme.textDark,
-                      height: 1.1,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: compact ? 10 : 11,
-                      fontWeight: FontWeight.w500,
-                      color: AppTheme.textMuted,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                  ),
-                ],
+            const SizedBox(height: 8),
+            Text(
+              value.padLeft(2, '0'),
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+                color: isLive ? AppTheme.textPrimary : AppTheme.textPrimary,
+                letterSpacing: -0.8,
+                height: 1.0,
               ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: AppTheme.textSecondary,
+                letterSpacing: -0.1,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -73,40 +104,30 @@ class QuickStatsBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isCompact = constraints.maxWidth < 360;
-        return Row(
-          children: [
-            _buildStatTile(
-              icon: Icons.directions_bus_rounded,
-              value: '$totalBuses',
-              label: 'Buses',
-              iconColor: AppTheme.primaryBlue,
-              bgTint: AppTheme.primaryBlue.withValues(alpha: 0.1),
-              compact: isCompact,
-            ),
-            SizedBox(width: isCompact ? 6 : 8),
-            _buildStatTile(
-              icon: Icons.sensors_rounded,
-              value: '$liveBuses',
-              label: 'Live Now',
-              iconColor: const Color(0xFF16A34A),
-              bgTint: AppTheme.statusLiveBg,
-              compact: isCompact,
-            ),
-            SizedBox(width: isCompact ? 6 : 8),
-            _buildStatTile(
-              icon: Icons.alt_route_rounded,
-              value: '$activeRoutes',
-              label: 'Routes',
-              iconColor: AppTheme.accentPurple,
-              bgTint: const Color(0xFFF3E8FF),
-              compact: isCompact,
-            ),
-          ],
-        );
-      },
+    return Row(
+      children: [
+        _buildMetricCard(
+          value: '$liveBuses',
+          label: 'Live buses',
+          icon: Icons.sensors_rounded,
+          accentColor: AppTheme.statusLive,
+          isLive: true,
+        ),
+        const SizedBox(width: 10),
+        _buildMetricCard(
+          value: '$totalBuses',
+          label: 'Total buses',
+          icon: Icons.directions_bus_rounded,
+          accentColor: AppTheme.primaryBlueLight,
+        ),
+        const SizedBox(width: 10),
+        _buildMetricCard(
+          value: '$activeRoutes',
+          label: 'Routes',
+          icon: Icons.alt_route_rounded,
+          accentColor: AppTheme.accentPurple,
+        ),
+      ],
     );
   }
 }

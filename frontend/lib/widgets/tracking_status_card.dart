@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../models/live_location.dart';
 import '../services/eta_calculator.dart';
+import 'live_status_dot.dart';
 
+/// Hero ETA and Live Status Telemetry Panel
 class TrackingStatusCard extends StatelessWidget {
   final LiveLocation location;
   final double? nextStopLat;
@@ -22,7 +24,7 @@ class TrackingStatusCard extends StatelessWidget {
     final isStale = location.isStale;
     final isMoving = location.status.toLowerCase() == 'moving' && !isStale;
 
-    // Calculate passenger-friendly ETA to next stop
+    // Passenger ETA string to next stop
     final etaText = EtaCalculator.calculateEta(
       location: location,
       nextStopLat: nextStopLat,
@@ -30,34 +32,34 @@ class TrackingStatusCard extends StatelessWidget {
     );
 
     return Container(
-      padding: const EdgeInsets.all(16),
       decoration: AppTheme.cardDecoration(
-        border: isStale ? const Color(0xFFFCA5A5) : AppTheme.borderColor,
+        background: AppTheme.surfaceLayer2,
+        border: isStale ? AppTheme.statusOfflineBorder : AppTheme.borderMedium,
+        glowColor: isMoving ? AppTheme.primaryBlue : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Stale Warning Banner if >30s
+          // Stale Warning Alert Banner if telemetry > 30s
           if (isStale) ...[
             Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFEF2F2),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFFCA5A5)),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: const BoxDecoration(
+                color: AppTheme.statusOfflineBg,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(AppTheme.radiusCard)),
+                border: Border(bottom: BorderSide(color: AppTheme.statusOfflineBorder)),
               ),
               child: const Row(
                 children: [
-                  Icon(Icons.warning_amber_rounded, color: Color(0xFFDC2626), size: 16),
-                  SizedBox(width: 6),
+                  Icon(Icons.warning_amber_rounded, color: AppTheme.statusOffline, size: 16),
+                  SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Location stale (>30s ago). Showing last known location.',
+                      'Telemetry stale (>30s ago). Showing last known position.',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF991B1B),
+                        color: AppTheme.statusOffline,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -67,272 +69,284 @@ class TrackingStatusCard extends StatelessWidget {
             ),
           ],
 
-          // Top Header: Live Badge & Timestamp / Refresh
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Status Badge
-              Flexible(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: isStale
-                        ? AppTheme.statusOfflineBg
-                        : (isMoving ? AppTheme.statusLiveBg : AppTheme.statusStoppedBg),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: isStale
-                          ? AppTheme.statusOfflineBorder
-                          : (isMoving ? AppTheme.statusLiveBorder : AppTheme.statusStoppedBorder),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 7,
-                        height: 7,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
+          Padding(
+            padding: const EdgeInsets.all(18.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Top Row: Status Badge & Updated Time + Refresh
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Status Pill
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: isStale
+                            ? AppTheme.statusOfflineBg
+                            : (isMoving ? AppTheme.statusLiveBg : AppTheme.statusStoppedBg),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusPill),
+                        border: Border.all(
                           color: isStale
-                              ? AppTheme.statusOfflineDot
-                              : (isMoving ? AppTheme.statusLiveDot : AppTheme.statusStoppedDot),
+                              ? AppTheme.statusOfflineBorder
+                              : (isMoving ? AppTheme.statusLiveBorder : AppTheme.statusStoppedBorder),
                         ),
                       ),
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          isStale
-                              ? 'STALE'
-                              : (isMoving ? 'LIVE • MOVING' : location.status.toUpperCase()),
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            color: isStale
-                                ? AppTheme.statusOfflineText
-                                : (isMoving ? AppTheme.statusLiveText : AppTheme.statusStoppedText),
-                            letterSpacing: 0.3,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (isMoving)
+                            const LiveStatusDot(size: 5, color: AppTheme.statusLive)
+                          else
+                            Container(
+                              width: 5,
+                              height: 5,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: isStale ? AppTheme.statusOffline : AppTheme.statusStopped,
+                              ),
+                            ),
+                          const SizedBox(width: 5),
+                          Text(
+                            isStale
+                                ? 'STALE'
+                                : (isMoving ? 'LIVE' : location.status.toUpperCase()),
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: isStale
+                                  ? AppTheme.statusOffline
+                                  : (isMoving ? AppTheme.statusLive : AppTheme.statusStopped),
+                              letterSpacing: 0.4,
+                            ),
                           ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // Updated Time & Refresh Button
-              Row(
-                children: [
-                  const Icon(
-                    Icons.access_time_rounded,
-                    size: 13,
-                    color: AppTheme.textMuted,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Updated ${location.formattedTime}',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textMuted,
                     ),
-                  ),
-                  if (onRefresh != null) ...[
-                    const SizedBox(width: 6),
-                    Semantics(
-                      button: true,
-                      label: 'Refresh live location',
-                      child: InkWell(
-                        onTap: onRefresh,
-                        borderRadius: BorderRadius.circular(20),
-                        child: Container(
-                          padding: const EdgeInsets.all(5.0),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primaryBlue.withValues(alpha: 0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.refresh_rounded,
-                            size: 16,
-                            color: AppTheme.primaryBlue,
+
+                    // Updated Time & Refresh Button
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.schedule_rounded,
+                          size: 13,
+                          color: AppTheme.textTertiary,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Updated ${location.formattedTime}',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: AppTheme.textSecondary,
                           ),
                         ),
-                      ),
+                        if (onRefresh != null) ...[
+                          const SizedBox(width: 6),
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: onRefresh,
+                              borderRadius: BorderRadius.circular(AppTheme.radiusPill),
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.surfaceLayer3,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: AppTheme.borderSubtle),
+                                ),
+                                child: const Icon(
+                                  Icons.refresh_rounded,
+                                  size: 14,
+                                  color: AppTheme.primaryBlueLight,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ],
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-
-          // Prominent Passenger ETA Hero Box
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFEFF6FF), Color(0xFFDBEAFE)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFF93C5FD)),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryBlue,
-                    borderRadius: BorderRadius.circular(10),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x292563EB),
-                        blurRadius: 8,
-                        offset: Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.timer_rounded,
-                    color: Colors.white,
-                    size: 24,
-                  ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
+                const SizedBox(height: 16),
+
+                // ── Dominant ETA Hero Section ──
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                  decoration: BoxDecoration(
+                    gradient: AppTheme.etaHeroGradient,
+                    borderRadius: BorderRadius.circular(AppTheme.radiusCard),
+                    border: Border.all(
+                      color: isMoving ? AppTheme.borderAccent : AppTheme.borderSubtle,
+                      width: 1,
+                    ),
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'ESTIMATED ARRIVAL',
+                        'ARRIVING IN',
                         style: TextStyle(
-                          fontSize: 10,
+                          fontSize: 11,
                           fontWeight: FontWeight.w800,
-                          color: Color(0xFF1E40AF),
-                          letterSpacing: 0.5,
+                          color: AppTheme.primaryBlueLight,
+                          letterSpacing: 1.2,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 4),
                       Text(
                         etaText,
                         style: const TextStyle(
-                          fontSize: 20,
+                          fontSize: 34,
                           fontWeight: FontWeight.w900,
-                          color: Color(0xFF1E3A8A),
-                          letterSpacing: -0.5,
+                          color: AppTheme.textPrimary,
+                          letterSpacing: -1.2,
+                          height: 1.1,
                         ),
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Next Stop: ${location.nextStop}',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF1E40AF),
-                          fontWeight: FontWeight.w600,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // Speed & Current Stop Row
-          Row(
-            children: [
-              // Speed
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: AppTheme.bgSlate,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFF1F5F9)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.speed_rounded, color: AppTheme.primaryBlue, size: 18),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              location.formattedSpeed,
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          const Text(
+                            'to ',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppTheme.textSecondary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(
+                              location.nextStop.isNotEmpty
+                                  ? location.nextStop
+                                  : 'Next stop',
                               style: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w800,
-                                color: AppTheme.textDark,
+                                color: AppTheme.textPrimary,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
-                            const Text(
-                              'Speed',
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: AppTheme.textMuted,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-              ),
-              const SizedBox(width: 10),
+                const SizedBox(height: 14),
 
-              // Current Stop
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: AppTheme.bgSlate,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFF1F5F9)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.location_on_rounded, color: Color(0xFF16A34A), size: 18),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                // Divider
+                const Divider(color: AppTheme.borderSubtle, height: 1),
+                const SizedBox(height: 14),
+
+                // Secondary Metrics Row: Speed & Current Stop
+                Row(
+                  children: [
+                    // Speed Metric
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: AppTheme.surfaceLayer1,
+                          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                          border: Border.all(color: AppTheme.borderSubtle),
+                        ),
+                        child: Row(
                           children: [
-                            Text(
-                              location.currentStop,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w800,
-                                color: AppTheme.textDark,
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: AppTheme.primaryBlue.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(AppTheme.radiusSm),
                               ),
-                              overflow: TextOverflow.ellipsis,
+                              child: const Icon(Icons.speed_rounded, color: AppTheme.primaryBlueLight, size: 16),
                             ),
-                            const Text(
-                              'Current Stop',
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: AppTheme.textMuted,
-                                fontWeight: FontWeight.w500,
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    location.formattedSpeed,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppTheme.textPrimary,
+                                      letterSpacing: -0.2,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const Text(
+                                    'Speed',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: AppTheme.textTertiary,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(width: 10),
+
+                    // Current Stop Metric
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: AppTheme.surfaceLayer1,
+                          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                          border: Border.all(color: AppTheme.borderSubtle),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: AppTheme.statusLiveBg,
+                                borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                              ),
+                              child: const Icon(Icons.location_on_rounded, color: AppTheme.statusLive, size: 16),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    location.currentStop.isNotEmpty ? location.currentStop : 'In transit',
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppTheme.textPrimary,
+                                      letterSpacing: -0.2,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const Text(
+                                    'Current Stop',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: AppTheme.textTertiary,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),

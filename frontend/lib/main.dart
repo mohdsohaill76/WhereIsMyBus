@@ -14,7 +14,9 @@ class WhereIsMyBusApp extends StatelessWidget {
     return MaterialApp(
       title: 'WhereIsMyBus',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
+      theme: AppTheme.darkTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.dark,
       home: const HomeScreen(),
     );
   }

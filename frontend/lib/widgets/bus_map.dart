@@ -3,11 +3,13 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../models/stop_model.dart';
 import '../theme/app_theme.dart';
+import 'live_status_dot.dart';
 
-/// Configuration for Map Tile Provider (Modular for easy swapping)
+/// Configuration for Map Tile Provider (CARTO Dark Matter / OpenStreetMap)
 class MapTileConfig {
-  /// Default OpenStreetMap tile endpoint
-  static const String openStreetMapUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+  /// CARTO Dark Matter tile endpoint (OpenStreetMap-based dark vector raster)
+  static const String darkMapUrl = 'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png';
+  static const String fallbackOsmUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
   static const String userAgentPackage = 'com.whereismybus.app';
 }
 
@@ -43,7 +45,7 @@ class BusMapWidget extends StatefulWidget {
   State<BusMapWidget> createState() => _BusMapWidgetState();
 }
 
-class _BusMapWidgetState extends State<BusMapWidget> with TickerProviderStateMixin {
+class _BusMapWidgetState extends State<BusMapWidget> {
   final MapController _mapController = MapController();
   StopModel? _selectedStop;
   bool _isMapReady = false;
@@ -126,7 +128,7 @@ class _BusMapWidgetState extends State<BusMapWidget> with TickerProviderStateMix
       _mapController.fitCamera(
         CameraFit.bounds(
           bounds: LatLngBounds.fromPoints(points),
-          padding: const EdgeInsets.all(40),
+          padding: const EdgeInsets.all(48),
         ),
       );
     }
@@ -142,42 +144,21 @@ class _BusMapWidgetState extends State<BusMapWidget> with TickerProviderStateMix
     final parsedStops = _parseStops();
     final polylinePoints = parsedStops.map((s) => LatLng(s.latitude, s.longitude)).toList();
 
-    // Determine Bus Status Styling
-    final Color busStatusColor;
-    final String busStatusLabel;
-    if (widget.isStale) {
-      busStatusColor = const Color(0xFFF97316); // Orange
-      busStatusLabel = 'STALE';
-    } else if (widget.isLive) {
-      busStatusColor = const Color(0xFF10B981); // Emerald Green
-      busStatusLabel = 'LIVE';
-    } else {
-      busStatusColor = const Color(0xFFF59E0B); // Amber
-      busStatusLabel = widget.status?.toUpperCase() ?? 'STOPPED';
-    }
-
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: const Color(0xFF0F172A),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF334155), width: 1),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x26000000),
-            blurRadius: 16,
-            offset: Offset(0, 6),
-          ),
-        ],
+        color: AppTheme.bgDark,
+        borderRadius: BorderRadius.circular(AppTheme.radiusSurface),
+        border: Border.all(color: AppTheme.borderMedium, width: 1),
       ),
       child: Stack(
         children: [
-          // 1. OpenStreetMap Interactive FlutterMap
+          // 1. OpenStreetMap (CARTO Dark Matter) Interactive FlutterMap
           FlutterMap(
             mapController: _mapController,
             options: MapOptions(
               initialCenter: initialPos,
-              initialZoom: widget.isOverviewMode ? 13.0 : 14.5,
+              initialZoom: widget.isOverviewMode ? 13.0 : 14.8,
               minZoom: 3.0,
               maxZoom: 18.5,
               interactionOptions: const InteractionOptions(
@@ -200,51 +181,65 @@ class _BusMapWidgetState extends State<BusMapWidget> with TickerProviderStateMix
               },
             ),
             children: [
-              // OpenStreetMap Tile Layer
+              // Dark-themed Map Tile Layer
               TileLayer(
-                urlTemplate: MapTileConfig.openStreetMapUrl,
+                urlTemplate: MapTileConfig.darkMapUrl,
+                fallbackUrl: MapTileConfig.fallbackOsmUrl,
                 userAgentPackageName: MapTileConfig.userAgentPackage,
                 tileProvider: NetworkTileProvider(),
                 maxZoom: 19,
               ),
 
-              // Route Polyline Layer
-              if (polylinePoints.isNotEmpty)
+              // Route Polyline Glow Layer & Core Layer
+              if (polylinePoints.isNotEmpty) ...[
+                // Ambient Glow Casing
                 PolylineLayer(
                   polylines: [
-                    // Base Blue Route Line
                     Polyline(
                       points: polylinePoints,
-                      color: AppTheme.primaryBlue,
-                      strokeWidth: 5.0,
+                      color: AppTheme.primaryBlue.withValues(alpha: 0.35),
+                      strokeWidth: 9.0,
                       strokeCap: StrokeCap.round,
                       strokeJoin: StrokeJoin.round,
                     ),
                   ],
                 ),
+                // Crisp Core Line
+                PolylineLayer(
+                  polylines: [
+                    Polyline(
+                      points: polylinePoints,
+                      color: AppTheme.primaryBlue,
+                      strokeWidth: 4.0,
+                      strokeCap: StrokeCap.round,
+                      strokeJoin: StrokeJoin.round,
+                    ),
+                  ],
+                ),
+              ],
 
-              // Stop Markers Layer
+              // Stop & Bus Markers Layer
               MarkerLayer(
                 markers: [
                   for (int i = 0; i < parsedStops.length; i++)
                     _buildStopMarker(parsedStops[i], i, parsedStops.length),
 
-                  // Live Bus Marker
+                  // Custom Hero Live Bus Marker
                   if (widget.latitude != 0.0 && widget.longitude != 0.0 && !widget.isOverviewMode)
                     Marker(
                       point: LatLng(widget.latitude, widget.longitude),
-                      width: 140,
-                      height: 70,
+                      width: 150,
+                      height: 75,
                       alignment: Alignment.center,
-                      child: _buildLiveBusMarkerWidget(busStatusColor, busStatusLabel),
+                      child: _buildLiveBusHeroMarker(),
                     ),
                 ],
               ),
 
-              // Standard OpenStreetMap Attribution
+              // OpenStreetMap & CARTO Attribution Badge
               const SimpleAttributionWidget(
                 source: Text(
-                  '© OpenStreetMap contributors',
+                  '© OpenStreetMap contributors © CARTO',
                   style: TextStyle(
                     fontSize: 10,
                     color: Color(0xFF64748B),
@@ -256,7 +251,7 @@ class _BusMapWidgetState extends State<BusMapWidget> with TickerProviderStateMix
             ],
           ),
 
-          // 2. Selected Stop Detail Tooltip/Card Overlay
+          // 2. Selected Stop Floating Tooltip Card
           if (_selectedStop != null)
             Positioned(
               top: 14,
@@ -287,7 +282,7 @@ class _BusMapWidgetState extends State<BusMapWidget> with TickerProviderStateMix
                 _buildMapControlButton(
                   icon: widget.isOverviewMode
                       ? Icons.crop_free_rounded
-                      : Icons.center_focus_strong_rounded,
+                      : Icons.near_me_rounded,
                   onTap: _recenterBus,
                   tooltip: widget.isOverviewMode ? 'Fit Route' : 'Recenter Bus',
                   isAccent: true,
@@ -300,7 +295,7 @@ class _BusMapWidgetState extends State<BusMapWidget> with TickerProviderStateMix
     );
   }
 
-  /// Builds a Stop Marker with distinct styling for Origin, Destination, Current, Next, and Waypoints
+  /// Builds a Stop Marker with dark mode accents
   Marker _buildStopMarker(StopModel stop, int index, int totalStops) {
     final isOrigin = index == 0;
     final isDestination = index == totalStops - 1 && totalStops > 1;
@@ -312,35 +307,35 @@ class _BusMapWidgetState extends State<BusMapWidget> with TickerProviderStateMix
         stop.id.toLowerCase() == widget.nextStop.toLowerCase();
 
     Color markerBg;
-    IconData markerIcon;
-    double markerSize = 28;
+    Color borderColor;
+    double markerSize = 22;
 
     if (isCurrent) {
-      markerBg = const Color(0xFF10B981); // Emerald Green
-      markerIcon = Icons.location_pin;
-      markerSize = 34;
+      markerBg = AppTheme.statusLive;
+      borderColor = Colors.white;
+      markerSize = 28;
     } else if (isNext) {
-      markerBg = const Color(0xFF06B6D4); // Cyan
-      markerIcon = Icons.navigation_rounded;
-      markerSize = 32;
+      markerBg = AppTheme.primaryBlue;
+      borderColor = Colors.white;
+      markerSize = 26;
     } else if (isOrigin) {
-      markerBg = const Color(0xFF22C55E); // Green
-      markerIcon = Icons.trip_origin_rounded;
-      markerSize = 28;
-    } else if (isDestination) {
-      markerBg = const Color(0xFFEF4444); // Red
-      markerIcon = Icons.sports_score_rounded;
-      markerSize = 28;
-    } else {
-      markerBg = const Color(0xFF475569); // Slate Blue
-      markerIcon = Icons.circle;
+      markerBg = AppTheme.primaryBlue;
+      borderColor = AppTheme.primaryBlueLight;
       markerSize = 24;
+    } else if (isDestination) {
+      markerBg = AppTheme.accentPurple;
+      borderColor = Colors.white;
+      markerSize = 24;
+    } else {
+      markerBg = AppTheme.surfaceLayer1;
+      borderColor = AppTheme.borderLight;
+      markerSize = 18;
     }
 
     return Marker(
       point: LatLng(stop.latitude, stop.longitude),
-      width: 44,
-      height: 44,
+      width: 38,
+      height: 38,
       alignment: Alignment.center,
       child: GestureDetector(
         onTap: () {
@@ -355,24 +350,29 @@ class _BusMapWidgetState extends State<BusMapWidget> with TickerProviderStateMix
           decoration: BoxDecoration(
             color: markerBg,
             shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 2),
+            border: Border.all(color: borderColor, width: (isCurrent || isNext) ? 2.5 : 1.5),
             boxShadow: [
               BoxShadow(
-                color: markerBg.withValues(alpha: 0.45),
-                blurRadius: 8,
+                color: markerBg.withValues(alpha: 0.5),
+                blurRadius: (isCurrent || isNext) ? 10 : 4,
                 spreadRadius: 1,
-                offset: const Offset(0, 2),
               ),
             ],
           ),
           child: Center(
             child: (isCurrent || isNext || isOrigin || isDestination)
-                ? Icon(markerIcon, color: Colors.white, size: markerSize * 0.55)
+                ? Icon(
+                    isCurrent
+                        ? Icons.location_on_rounded
+                        : (isNext ? Icons.near_me_rounded : (isOrigin ? Icons.trip_origin_rounded : Icons.flag_rounded)),
+                    color: Colors.white,
+                    size: markerSize * 0.55,
+                  )
                 : Text(
                     '${stop.sequence}',
                     style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
+                      color: AppTheme.textSecondary,
+                      fontSize: 9,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -382,8 +382,16 @@ class _BusMapWidgetState extends State<BusMapWidget> with TickerProviderStateMix
     );
   }
 
-  /// Builds the animated, glowing Live Bus Marker
-  Widget _buildLiveBusMarkerWidget(Color statusColor, String statusLabel) {
+  /// Custom Hero Live Bus Marker (BUS101 ● LIVE with Emerald Glow)
+  Widget _buildLiveBusHeroMarker() {
+    final isLive = widget.isLive && !widget.isStale;
+    final statusColor = widget.isStale
+        ? AppTheme.statusOffline
+        : (isLive ? AppTheme.statusLive : AppTheme.statusStopped);
+    final statusLabel = widget.isStale
+        ? 'STALE'
+        : (isLive ? 'LIVE' : (widget.status?.toUpperCase() ?? 'STOPPED'));
+
     final speedText = widget.speed != null && widget.speed! > 0
         ? ' • ${widget.speed!.toStringAsFixed(0)} km/h'
         : '';
@@ -391,67 +399,73 @@ class _BusMapWidgetState extends State<BusMapWidget> with TickerProviderStateMix
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Bus Badge Label Pill
+        // Bus Badge Pill with subtle emerald glow
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
           decoration: BoxDecoration(
-            color: AppTheme.primaryNavy.withValues(alpha: 0.92),
-            borderRadius: BorderRadius.circular(12),
+            color: AppTheme.surfaceLayer1,
+            borderRadius: BorderRadius.circular(AppTheme.radiusPill),
             border: Border.all(color: statusColor, width: 1.5),
-            boxShadow: const [
+            boxShadow: [
               BoxShadow(
-                color: Color(0x55000000),
-                blurRadius: 8,
-                offset: Offset(0, 3),
+                color: statusColor.withValues(alpha: 0.35),
+                blurRadius: 12,
+                spreadRadius: 1,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  color: statusColor,
-                  shape: BoxShape.circle,
+              if (isLive)
+                LiveStatusDot(size: 4, color: statusColor)
+              else
+                Container(
+                  width: 4,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: statusColor,
+                    shape: BoxShape.circle,
+                  ),
                 ),
-              ),
               const SizedBox(width: 5),
               Text(
                 '${widget.busNumber} ($statusLabel$speedText)',
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: AppTheme.textPrimary,
                   fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.2,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.1,
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 3),
+        const SizedBox(height: 4),
 
-        // Glowing Bus Icon Pin
+        // Bus Pin Icon with Core Light Dot
         Container(
           width: 34,
           height: 34,
           decoration: BoxDecoration(
-            color: statusColor,
+            color: AppTheme.surfaceLayer1,
             shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 2.5),
+            border: Border.all(color: statusColor, width: 2.5),
             boxShadow: [
               BoxShadow(
                 color: statusColor.withValues(alpha: 0.5),
-                blurRadius: 10,
+                blurRadius: 12,
                 spreadRadius: 2,
               ),
             ],
           ),
-          child: const Icon(
-            Icons.directions_bus_rounded,
-            color: Colors.white,
-            size: 18,
+          child: Center(
+            child: Icon(
+              Icons.directions_bus_rounded,
+              color: statusColor,
+              size: 18,
+            ),
           ),
         ),
       ],
@@ -462,30 +476,22 @@ class _BusMapWidgetState extends State<BusMapWidget> with TickerProviderStateMix
   Widget _buildStopTooltipCard(StopModel stop) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppTheme.primaryNavy.withValues(alpha: 0.95),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF334155), width: 1),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x3D000000),
-            blurRadius: 12,
-            offset: Offset(0, 4),
-          ),
-        ],
+      decoration: AppTheme.cardDecoration(
+        background: AppTheme.surfaceLayer2,
+        border: AppTheme.borderMedium,
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(7),
             decoration: BoxDecoration(
-              color: AppTheme.primaryBlue.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(10),
+              color: AppTheme.primaryBlue.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(8),
             ),
             child: const Icon(
               Icons.location_on_rounded,
-              color: AppTheme.primaryBlue,
-              size: 20,
+              color: AppTheme.primaryBlueLight,
+              size: 17,
             ),
           ),
           const SizedBox(width: 10),
@@ -497,18 +503,18 @@ class _BusMapWidgetState extends State<BusMapWidget> with TickerProviderStateMix
                 Text(
                   stop.name,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: AppTheme.textPrimary,
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 1),
                 Text(
                   'Stop #${stop.sequence} • ${stop.id}',
                   style: const TextStyle(
-                    color: Color(0xFF94A3B8),
+                    color: AppTheme.textSecondary,
                     fontSize: 11,
                   ),
                 ),
@@ -521,7 +527,7 @@ class _BusMapWidgetState extends State<BusMapWidget> with TickerProviderStateMix
                 _selectedStop = null;
               });
             },
-            icon: const Icon(Icons.close_rounded, color: Color(0xFF94A3B8), size: 18),
+            icon: const Icon(Icons.close_rounded, color: AppTheme.textTertiary, size: 18),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
             tooltip: 'Dismiss',
@@ -538,27 +544,27 @@ class _BusMapWidgetState extends State<BusMapWidget> with TickerProviderStateMix
     bool isAccent = false,
   }) {
     return Material(
-      color: isAccent ? AppTheme.primaryBlue : const Color(0xEE1E293B),
-      borderRadius: BorderRadius.circular(12),
+      color: isAccent ? AppTheme.primaryBlue : AppTheme.surfaceLayer2,
+      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
       elevation: 4,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
         child: Container(
-          width: 40,
-          height: 40,
+          width: 38,
+          height: 38,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
             border: Border.all(
-              color: isAccent ? const Color(0x6693C5FD) : const Color(0xFF334155),
+              color: isAccent ? AppTheme.primaryBlueLight : AppTheme.borderMedium,
               width: 1,
             ),
           ),
           child: Icon(
             icon,
-            color: Colors.white,
-            size: 20,
+            color: isAccent ? Colors.white : AppTheme.textPrimary,
+            size: 18,
           ),
         ),
       ),
