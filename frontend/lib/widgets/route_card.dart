@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../models/route_model.dart';
+import '../models/favorite_item.dart';
+import '../services/storage_service.dart';
 import 'live_status_dot.dart';
 
 class RouteCard extends StatefulWidget {
@@ -79,30 +81,66 @@ class _RouteCardState extends State<RouteCard> {
                       ),
                     ],
                   ),
-                  if (liveBusCount > 0)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: AppTheme.statusLiveBg,
-                        borderRadius: BorderRadius.circular(AppTheme.radiusPill),
-                        border: Border.all(color: AppTheme.statusLiveBorder),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const LiveStatusDot(size: 4, color: AppTheme.statusLive),
-                          const SizedBox(width: 4),
-                          Text(
-                            '$liveBusCount ${liveBusCount == 1 ? 'bus' : 'buses'} live',
-                            style: const TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              color: AppTheme.statusLive,
-                            ),
+                  Row(
+                    children: [
+                      if (liveBusCount > 0)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppTheme.statusLiveBg,
+                            borderRadius: BorderRadius.circular(AppTheme.radiusPill),
+                            border: Border.all(color: AppTheme.statusLiveBorder),
                           ),
-                        ],
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const LiveStatusDot(size: 4, color: AppTheme.statusLive),
+                              const SizedBox(width: 4),
+                              Text(
+                                '$liveBusCount ${liveBusCount == 1 ? 'bus' : 'buses'} live',
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppTheme.statusLive,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      const SizedBox(width: AppTheme.space6),
+                      ValueListenableBuilder<List<FavoriteItem>>(
+                        valueListenable: StorageService.instance.favoritesNotifier,
+                        builder: (context, favorites, child) {
+                          final isFav = StorageService.instance.isFavorite('route', widget.route.id);
+                          return Semantics(
+                            button: true,
+                            label: isFav ? 'Remove route ${widget.route.name} from favorites' : 'Add route ${widget.route.name} to favorites',
+                            child: IconButton(
+                              icon: Icon(
+                                isFav ? Icons.star_rounded : Icons.star_border_rounded,
+                                color: isFav ? AppTheme.accentAmber : AppTheme.textTertiary,
+                                size: 20,
+                              ),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                              tooltip: isFav ? 'Unfavorite' : 'Add to Favorites',
+                              onPressed: () {
+                                StorageService.instance.toggleFavorite(
+                                  FavoriteItem(
+                                    type: 'route',
+                                    id: widget.route.id,
+                                    title: widget.route.name,
+                                    subtitle: '${widget.route.stopCount} stops',
+                                    savedAt: DateTime.now().millisecondsSinceEpoch,
+                                  ),
+                                );
+                              },
+                            ),
+                          );
+                        },
                       ),
-                    ),
+                    ],
+                  ),
                 ],
               ),
               const SizedBox(height: 12),

@@ -47,8 +47,8 @@ void main() {
     await tester.pumpWidget(const WhereIsMyBusApp());
     await tester.pump(const Duration(milliseconds: 500));
 
-    // Switch to Routes tab in floating navigation
-    await tester.tap(find.byIcon(Icons.alt_route_rounded).last);
+    // Switch to Routes tab in navigation
+    await tester.tap(find.byKey(const Key('nav_routes')));
     await tester.pump(const Duration(milliseconds: 500));
 
     // Routes Screen renders

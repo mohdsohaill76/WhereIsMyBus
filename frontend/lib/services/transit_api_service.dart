@@ -17,6 +17,8 @@ class TransitApiException implements Exception {
 }
 
 class TransitApiService {
+  static final TransitApiService instance = TransitApiService();
+
   /// Centralized API Base URL for backend connection.
   /// Overridable at compile time via: --dart-define=API_BASE_URL=https://your-backend-domain.com
   static String baseUrl = const String.fromEnvironment(
@@ -29,6 +31,10 @@ class TransitApiService {
 
   /// Internal cache for stops lookup
   List<StopModel>? _cachedStops;
+
+  Future<List<BusModel>> getAllBuses() => fetchBuses();
+  Future<List<RouteModel>> getAllRoutes() => fetchRoutes();
+  Future<List<StopModel>> getAllStops() => fetchStops();
 
   /// Fetches registered buses from GET /api/buses.
   Future<List<BusModel>> fetchBuses() async {

@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../models/live_location.dart';
 import '../models/stop_model.dart';
+import '../models/favorite_item.dart';
+import '../models/recent_activity_item.dart';
 import '../services/transit_api_service.dart';
+import '../services/storage_service.dart';
 import '../widgets/bus_map.dart';
 import '../widgets/tracking_status_card.dart';
 import '../widgets/route_progress_card.dart';
@@ -36,6 +39,16 @@ class _BusTrackingScreenState extends State<BusTrackingScreen> {
   void initState() {
     super.initState();
     _fetchData();
+    // Record into passenger recent history
+    StorageService.instance.addRecentActivity(
+      RecentActivityItem(
+        type: 'bus',
+        id: widget.busNumber,
+        title: widget.busNumber,
+        subtitle: widget.routeName,
+        viewedAt: DateTime.now().millisecondsSinceEpoch,
+      ),
+    );
     // Auto refresh live location telemetry every 15 seconds
     _pollingTimer = Timer.periodic(const Duration(seconds: 15), (_) {
       _fetchData(showLoading: false);
@@ -240,7 +253,36 @@ class _BusTrackingScreenState extends State<BusTrackingScreen> {
                   ),
                 ],
               ),
-              _buildStatusPill(isLive, isStale),
+              Row(
+                children: [
+                  ValueListenableBuilder<List<FavoriteItem>>(
+                    valueListenable: StorageService.instance.favoritesNotifier,
+                    builder: (context, favorites, child) {
+                      final isFav = StorageService.instance.isFavorite('bus', widget.busNumber);
+                      return IconButton(
+                        icon: Icon(
+                          isFav ? Icons.star_rounded : Icons.star_border_rounded,
+                          color: isFav ? AppTheme.accentAmber : AppTheme.textSecondary,
+                        ),
+                        tooltip: isFav ? 'Unfavorite Bus' : 'Favorite Bus',
+                        onPressed: () {
+                          StorageService.instance.toggleFavorite(
+                            FavoriteItem(
+                              type: 'bus',
+                              id: widget.busNumber,
+                              title: widget.busNumber,
+                              subtitle: widget.routeName,
+                              savedAt: DateTime.now().millisecondsSinceEpoch,
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  _buildStatusPill(isLive, isStale),
+                ],
+              ),
             ],
           ),
         ),
@@ -335,46 +377,85 @@ class _BusTrackingScreenState extends State<BusTrackingScreen> {
           ),
         ),
 
-        // Bus ID & Status Badge Pill
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: AppTheme.glassDecoration(
-            background: AppTheme.surfaceLayer1.withValues(alpha: 0.9),
-            border: AppTheme.borderMedium,
-          ),
-          child: Row(
-            children: [
-              Text(
-                displayBusName,
-                style: const TextStyle(
-                  color: AppTheme.textPrimary,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                ),
+        // Bus ID & Status Badge Pill + Favorite Button
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: AppTheme.glassDecoration(
+                background: AppTheme.surfaceLayer1.withValues(alpha: 0.9),
+                border: AppTheme.borderMedium,
               ),
-              const SizedBox(width: 8),
-              if (isLive)
-                const LiveStatusDot(size: 4, color: AppTheme.statusLive)
-              else
-                Container(
-                  width: 5,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: isStale ? AppTheme.statusOffline : AppTheme.statusStopped,
+              child: Row(
+                children: [
+                  Text(
+                    displayBusName,
+                    style: const TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
-                ),
-              const SizedBox(width: 5),
-              Text(
-                isLive ? 'LIVE' : (isStale ? 'STALE' : _location?.status.toUpperCase() ?? 'OFFLINE'),
-                style: TextStyle(
-                  color: isLive ? AppTheme.statusLive : (isStale ? AppTheme.statusOffline : AppTheme.statusStopped),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                ),
+                  const SizedBox(width: 8),
+                  if (isLive)
+                    const LiveStatusDot(size: 4, color: AppTheme.statusLive)
+                  else
+                    Container(
+                      width: 5,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isStale ? AppTheme.statusOffline : AppTheme.statusStopped,
+                      ),
+                    ),
+                  const SizedBox(width: 5),
+                  Text(
+                    isLive ? 'LIVE' : (isStale ? 'STALE' : _location?.status.toUpperCase() ?? 'OFFLINE'),
+                    style: TextStyle(
+                      color: isLive ? AppTheme.statusLive : (isStale ? AppTheme.statusOffline : AppTheme.statusStopped),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              decoration: AppTheme.glassDecoration(
+                background: AppTheme.surfaceLayer1.withValues(alpha: 0.9),
+                border: AppTheme.borderMedium,
+              ),
+              child: ValueListenableBuilder<List<FavoriteItem>>(
+                valueListenable: StorageService.instance.favoritesNotifier,
+                builder: (context, favorites, child) {
+                  final isFav = StorageService.instance.isFavorite('bus', widget.busNumber);
+                  return IconButton(
+                    icon: Icon(
+                      isFav ? Icons.star_rounded : Icons.star_border_rounded,
+                      color: isFav ? AppTheme.accentAmber : AppTheme.textSecondary,
+                      size: 20,
+                    ),
+                    constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
+                    padding: EdgeInsets.zero,
+                    tooltip: isFav ? 'Unfavorite Bus' : 'Favorite Bus',
+                    onPressed: () {
+                      StorageService.instance.toggleFavorite(
+                        FavoriteItem(
+                          type: 'bus',
+                          id: widget.busNumber,
+                          title: widget.busNumber,
+                          subtitle: widget.routeName,
+                          savedAt: DateTime.now().millisecondsSinceEpoch,
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ],
     );

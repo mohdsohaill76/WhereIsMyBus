@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../models/route_model.dart';
+import '../models/favorite_item.dart';
+import '../models/recent_activity_item.dart';
+import '../services/storage_service.dart';
 import '../widgets/bus_map.dart';
 import '../widgets/live_status_dot.dart';
 import 'bus_tracking_screen.dart';
@@ -15,6 +18,17 @@ class RouteDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Record recent activity on open
+    StorageService.instance.addRecentActivity(
+      RecentActivityItem(
+        type: 'route',
+        id: route.id,
+        title: route.name,
+        subtitle: '${route.stopCount} stops',
+        viewedAt: DateTime.now().millisecondsSinceEpoch,
+      ),
+    );
+
     final firstStop = route.stops.isNotEmpty ? route.stops.first.shortName : 'Start';
     final secondStop = route.stops.length > 1 ? route.stops[1].shortName : 'Next';
 
@@ -66,6 +80,33 @@ class RouteDetailsScreen extends StatelessWidget {
             ),
           ],
         ),
+        actions: [
+          ValueListenableBuilder<List<FavoriteItem>>(
+            valueListenable: StorageService.instance.favoritesNotifier,
+            builder: (context, favorites, child) {
+              final isFav = StorageService.instance.isFavorite('route', route.id);
+              return IconButton(
+                icon: Icon(
+                  isFav ? Icons.star_rounded : Icons.star_border_rounded,
+                  color: isFav ? AppTheme.accentAmber : AppTheme.textSecondary,
+                ),
+                tooltip: isFav ? 'Unfavorite Route' : 'Favorite Route',
+                onPressed: () {
+                  StorageService.instance.toggleFavorite(
+                    FavoriteItem(
+                      type: 'route',
+                      id: route.id,
+                      title: route.name,
+                      subtitle: '${route.stopCount} stops',
+                      savedAt: DateTime.now().millisecondsSinceEpoch,
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: Center(
         child: ConstrainedBox(

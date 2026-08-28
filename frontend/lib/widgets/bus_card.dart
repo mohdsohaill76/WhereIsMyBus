@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../models/favorite_item.dart';
+import '../services/storage_service.dart';
 import 'live_status_dot.dart';
 
 class BusCard extends StatefulWidget {
@@ -154,7 +156,43 @@ class _BusCardState extends State<BusCard> {
                       ),
                     ],
                   ),
-                  _buildStatusBadge(widget.status),
+                  Row(
+                    children: [
+                      _buildStatusBadge(widget.status),
+                      const SizedBox(width: AppTheme.space6),
+                      ValueListenableBuilder<List<FavoriteItem>>(
+                        valueListenable: StorageService.instance.favoritesNotifier,
+                        builder: (context, favorites, child) {
+                          final isFav = StorageService.instance.isFavorite('bus', widget.busNumber);
+                          return Semantics(
+                            button: true,
+                            label: isFav ? 'Remove ${widget.busNumber} from favorites' : 'Add ${widget.busNumber} to favorites',
+                            child: IconButton(
+                              icon: Icon(
+                                isFav ? Icons.star_rounded : Icons.star_border_rounded,
+                                color: isFav ? AppTheme.accentAmber : AppTheme.textTertiary,
+                                size: 20,
+                              ),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                              tooltip: isFav ? 'Unfavorite' : 'Add to Favorites',
+                              onPressed: () {
+                                StorageService.instance.toggleFavorite(
+                                  FavoriteItem(
+                                    type: 'bus',
+                                    id: widget.busNumber,
+                                    title: widget.busNumber,
+                                    subtitle: widget.route,
+                                    savedAt: DateTime.now().millisecondsSinceEpoch,
+                                  ),
+                                );
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
                 ],
               ),
               const SizedBox(height: 12),
